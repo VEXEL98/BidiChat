@@ -2,10 +2,10 @@
   "manifest_version": 3,
   "name": "BidiChat – Auto Direction for AI Chats",
   "version": "1.0.0",
-  "description": "Sets correct RTL/LTR direction for Persian/Arabic text in Claude, ChatGPT & DeepSeek. No more left‑aligned Persian!",
+  "description": "Sets correct RTL/LTR direction for Persian/Arabic text in Claude, ChatGPT & DeepSeek – with customizable font and size.",
   "author": "VEXEL98",
   "homepage_url": "https://github.com/VEXEL98",
-  "permissions": [],
+  "permissions": ["storage"],
   "host_permissions": [
     "*://claude.ai/*",
     "*://chat.deepseek.com/*",
@@ -23,5 +23,13 @@
       "js": ["content.js"],
       "run_at": "document_idle"
     }
-  ]
+  ],
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
+  "icons": {
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
 }

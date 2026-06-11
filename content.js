@@ -1,7 +1,7 @@
 // BidiChat – Auto Direction for AI Chats
 // Chrome Extension (Manifest V3)
 // Published by VEXEL98 – github.com/VEXEL98
-// Version 5.6 – Fix: code blocks with language banner remain LTR
+// Version 6.2 – Fixed font inheritance on AI messages
 
 (function () {
   'use strict';
@@ -10,11 +10,59 @@
   const IS_DEEPSEEK = HOST.includes('deepseek.com');
   console.log(`[BidiChat] Active on ${HOST} (${IS_DEEPSEEK ? 'DeepSeek mode' : 'Standard mode'})`);
 
-  // ── Global CSS ───────────────────────────────────────────────────────
+  // ── 0. Load user settings ─────────────────────────────────────────────
+  let rtlFontStack = 'Vazirmatn, Tahoma, Arial, sans-serif';
+  let rtlFontSize = '16px';
+
+  const applySettings = (settings) => {
+    rtlFontStack = settings.rtlFont ? `${settings.rtlFont}, Tahoma, Arial, sans-serif` : rtlFontStack;
+    rtlFontSize = settings.rtlFontSize ? settings.rtlFontSize + 'px' : rtlFontSize;
+
+    // Update the dedicated style element
+    let styleEl = document.getElementById('bidi-font-style');
+    if (!styleEl) {
+      styleEl = document.createElement('style');
+      styleEl.id = 'bidi-font-style';
+      document.head.appendChild(styleEl);
+    }
+    styleEl.textContent = `
+      :root {
+        --bidi-rtl-font: ${rtlFontStack};
+        --bidi-rtl-font-size: ${rtlFontSize};
+      }
+    `;
+    console.log(`[BidiChat] Font: ${rtlFontStack} | Size: ${rtlFontSize}`);
+  };
+
+  // Load initial settings
+  chrome.storage.sync.get(['rtlFont', 'rtlFontSize'], applySettings);
+
+  // Listen for changes
+  chrome.storage.onChanged.addListener((changes, area) => {
+    if (area === 'sync') {
+      chrome.storage.sync.get(['rtlFont', 'rtlFontSize'], applySettings);
+    }
+  });
+
+  // ── 1. Global CSS ─────────────────────────────────────────────────────
   const globalCSS = document.createElement('style');
   globalCSS.textContent = `
+    /* 1) Any element that is explicitly RTL */
+    [dir="rtl"] {
+      font-family: var(--bidi-rtl-font) !important;
+      font-size: var(--bidi-rtl-font-size) !important;
+    }
+
+    /* 2) Inside a container that we have marked as RTL (even if child has no dir) */
+    [data-bidi-rtl-font="true"],
+    [data-bidi-rtl-font="true"] * {
+      font-family: var(--bidi-rtl-font) !important;
+      font-size: var(--bidi-rtl-font-size) !important;
+    }
+
     [dir="rtl"] { text-align: right !important; }
     [dir="ltr"] { text-align: left !important; }
+
     pre[data-bidi-code], code[data-bidi-code],
     [class*="code-block"][data-bidi-code],
     [class*="md-code"][data-bidi-code],
@@ -36,6 +84,7 @@
   `;
   document.head.appendChild(globalCSS);
 
+  // ── 2. DeepSeek‑specific overrides ────────────────────────────────────
   if (IS_DEEPSEEK) {
     const dsCSS = document.createElement('style');
     dsCSS.textContent = `
@@ -52,6 +101,25 @@
         text-align: right !important;
         unicode-bidi: embed !important;
       }
+      /* Override font for DeepSeek RTL containers */
+      div.ds-markdown[dir="rtl"],
+      div.ds-assistant-message-main-content[dir="rtl"],
+      div.ds-think-content[dir="rtl"],
+      div.fbb737a4[dir="rtl"],
+      div.ds-markdown[data-bidi-rtl-font="true"],
+      div.ds-assistant-message-main-content[data-bidi-rtl-font="true"],
+      div.ds-think-content[data-bidi-rtl-font="true"],
+      div.fbb737a4[data-bidi-rtl-font="true"] {
+        font-family: var(--bidi-rtl-font) !important;
+        font-size: var(--bidi-rtl-font-size) !important;
+      }
+      div.ds-markdown[data-bidi-rtl-font="true"] *,
+      div.ds-assistant-message-main-content[data-bidi-rtl-font="true"] *,
+      div.ds-think-content[data-bidi-rtl-font="true"] *,
+      div.fbb737a4[data-bidi-rtl-font="true"] * {
+        font-family: inherit !important;
+      }
+
       div.ds-markdown[dir="ltr"],
       div.ds-assistant-message-main-content[dir="ltr"],
       div.ds-think-content[dir="ltr"],
@@ -65,22 +133,17 @@
     console.log('[BidiChat] DeepSeek CSS injected');
   }
 
-  // ── Utilities ─────────────────────────────────────────────────────────
+  // ── 3. Utilities ──────────────────────────────────────────────────────
   const RTL_REGEX = /[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/;
   const ARROW_REGEX = /[\u2190-\u21FF\u27F0-\u27FF\u2900-\u297F\u2B00-\u2B2F]/;
 
   const hasRtlChar = (str) => RTL_REGEX.test(str);
 
-  // Improved code block detection: now considers language banner
   const isRealCodeBlock = (el) => {
     if (el.nodeType !== Node.ELEMENT_NODE) return false;
-    // Syntax highlight tokens
     if (el.matches('[class*="token"], [class*="language-"], [class*="hljs"], [class*="prism"]')) return true;
-    // Code containers (pre, code, code-block, md-code)
     if (el.matches('pre, code, [class*="code-block"], [class*="md-code"], [class*="CodeBlock"]')) {
-      // Contains syntax highlight? → real code
       if (el.querySelector('[class*="token"], [class*="hljs"], [class*="prism"], [class*="language-"]')) return true;
-      // Has a language banner (e.g., DeepSeek code blocks with language label) → real code
       if (el.querySelector('[class*="md-code-block-banner"], [class*="code-block-banner"]')) return true;
     }
     return false;
@@ -100,7 +163,6 @@
     if (container && !container.dataset.bidiCode) enforceLtr(container);
   };
 
-  // ── Arrow fix ─────────────────────────────────────────────────────────
   const fixArrows = (container) => {
     if (container.dataset.bidiArrowFixed === 'true') return;
     const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT, null, false);
@@ -130,10 +192,19 @@
     container.dataset.bidiArrowFixed = 'true';
   };
 
-  // ── Process a message container ───────────────────────────────────────
+  // ── 4. Process a message container ────────────────────────────────────
   const processContainer = (container) => {
     if (container.dataset.bidiApplied === 'true') return;
+
     container.setAttribute('dir', 'auto');
+
+    // Mark the container for font injection if text is RTL
+    if (hasRtlChar(container.textContent)) {
+      container.dataset.bidiRtlFont = 'true';
+    } else {
+      delete container.dataset.bidiRtlFont;
+    }
+
     container.dataset.bidiApplied = 'true';
 
     const codeSelectors = 'pre, code, [class*="code-block"], [class*="md-code"], [class*="CodeBlock"], [class*="token"], [class*="language-"], [class*="hljs"], [class*="prism"]';
@@ -152,7 +223,7 @@
     if (hasRtlChar(container.textContent)) fixArrows(container);
   };
 
-  // ── Selectors for message containers ─────────────────────────────────
+  // ── 5. Message container selectors ────────────────────────────────────
   const MESSAGE_SELECTORS = IS_DEEPSEEK
     ? ['div.ds-markdown', 'div.ds-assistant-message-main-content', 'div.ds-think-content', 'div.fbb737a4']
     : [
@@ -167,14 +238,14 @@
 
   const JOINED_SELECTORS = MESSAGE_SELECTORS.join(',');
 
-  // ── Initial processing ────────────────────────────────────────────────
+  // ── 6. Initial processing ─────────────────────────────────────────────
   const initialContainers = document.querySelectorAll(JOINED_SELECTORS);
   console.log(`[BidiChat] ${initialContainers.length} containers found`);
   initialContainers.forEach(el => {
     if (el.textContent.trim().length > 3) processContainer(el);
   });
 
-  // ── Immediate code observer ───────────────────────────────────────────
+  // ── 7. Immediate code observer ────────────────────────────────────────
   const immediateObs = new MutationObserver(mutations => {
     for (const mut of mutations) {
       for (const node of mut.addedNodes) {
@@ -186,7 +257,6 @@
           const inner = node.querySelectorAll('[class*="token"], [class*="language-"], [class*="hljs"], [class*="prism"]');
           for (const hl of inner) LTRifyCodeContainer(hl);
         }
-        // Also handle code containers that appear with a language banner
         if (isRealCodeBlock(node) && !node.dataset.bidiCode) enforceLtr(node);
       }
     }
@@ -194,7 +264,7 @@
   immediateObs.observe(document.body, { childList: true, subtree: true });
   console.log('[BidiChat] Immediate code observer active');
 
-  // ── Main observer (containers + streaming) ────────────────────────────
+  // ── 8. Main observer (containers + streaming) ─────────────────────────
   let rafId = null;
   const mainObs = new MutationObserver(mutations => {
     if (rafId) return;
@@ -232,7 +302,7 @@
   mainObs.observe(document.body, { childList: true, subtree: true, characterData: true });
   console.log('[BidiChat] Main observer active');
 
-  // ── Input field direction ─────────────────────────────────────────────
+  // ── 9. Input field direction ──────────────────────────────────────────
   document.addEventListener('input', () => {
     const el = document.activeElement;
     if (!el) return;
