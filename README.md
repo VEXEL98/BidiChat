@@ -8,7 +8,7 @@
 **BidiChat** افزونه‌ای متن‌باز و سبک برای کروم است که به‌طور خودکار جهت نوشتار **فارسی، عربی و سایر زبان‌های راست‌به‌چپ** را در پلتفرم‌های هوش مصنوعی مانند **Claude، ChatGPT و DeepSeek** تصحیح می‌کند.  
 بدون این افزونه، متن فارسی شما چپ‌چین و ناخوانا دیده می‌شود—BidiChat این مشکل را برای همیشه حل می‌کند.
 
-[![دانلود نسخه ۱.۰.۰](https://img.shields.io/badge/%D8%AF%D8%A7%D9%86%D9%84%D9%88%D8%AF-v1.0.0-blue)](https://github.com/VEXEL98/BidiChat/releases/tag/v1.0.0)
+[![دانلود نسخه ۱.۱.۰](https://img.shields.io/badge/%D8%AF%D8%A7%D9%86%D9%84%D9%88%D8%AF-v1.1.0-blue)](https://github.com/VEXEL98/BidiChat/releases/tag/v1.1.0)
 
 ---
 
@@ -19,6 +19,7 @@
 | ویژگی | توضیح |
 |--------|--------|
 | **راست‌چین خودکار** | پیام‌های فارسی و عربی بلافاصله راست‌چین می‌شوند. |
+| **انتخاب فونت و سایز** | کاربر می‌تواند فونت و اندازهٔ متن راست‌چین را از صفحهٔ تنظیمات افزونه تغییر دهد. |
 | **کدهای برنامه‌نویسی** | کدها چپ‌چین باقی می‌مانند—پرانتز و نشانه‌ها خراب نمی‌شوند. |
 | **پشتیبانی از استریم** | حتی وقتی هوش مصنوعی در حال تایپ پاسخ است، جهت نوشتار درست می‌شود. |
 | **فیلد ورودی هوشمند** | هنگام تایپ فارسی، کادر نوشتار خودکار راست‌چین می‌شود. |
@@ -48,6 +49,7 @@
 | الميزة | الوصف |
 |--------|--------|
 | **RTL تلقائي** | الرسائل الفارسية والعربية تظهر بمحاذاة اليمين فورًا. |
+| **تخصيص الخط والحجم** | يمكن للمستخدم اختيار الخط وحجم النص من صفحة إعدادات الإضافة. |
 | **الأكواد البرمجية LTR** | تبقى الأكواد من اليسار لليمين دون تشويه الأقواس. |
 | **دعم البث المباشر** | يعمل أثناء كتابة الذكاء الاصطناعي للرد. |
 | **حقل الإدخال الذكي** | يتحول تلقائيًا للكتابة من اليمين عند الكتابة بالفارسية. |
@@ -74,6 +76,7 @@
 | Feature | Description |
 |---------|-------------|
 | **Auto RTL** | Persian/Arabic texts are instantly right‑aligned. |
+| **Custom Font & Size** | Choose your preferred RTL font and size from the extension’s settings page. |
 | **Code Stays LTR** | Programming code remains left‑to‑right with correct brackets. |
 | **Streaming Support** | Direction is applied while the AI is typing its response. |
 | **Smart Input** | The input field switches to RTL automatically when needed. |
@@ -99,13 +102,23 @@ Edit `manifest.json` and add new domains to `host_permissions`, then update `MES
 ## 🏷️ Repository Structure
 
 BidiChat/
+
 ├── manifest.json # Chrome Extension Manifest (V3)
 
 ├── content.js # Core direction logic
 
+├── options.html # Settings page (font & size)
+
+├── options.js # Settings logic
+
 ├── README.md # This file
 
 ├── LICENSE # MIT License
+
+├── icon48.png # Extension icon
+
+├── icon128.png # Extension icon
+
 
 ---
 
@@ -113,8 +126,9 @@ BidiChat/
 
 **[VEXEL98](https://github.com/VEXEL98)**  
 پرسش یا پیشنهاد دارید؟  
-از طریق [Issues](https://github.com/VEXEL98/BidiChat/issues) یا [Discussions](https://github.com/VEXEL98/BidiChat/discussions) در میان بگذارید.  
-اگر این پروژه به کارتان آمده، با ستاره ⭐ دادن به آن دیگران را هم آگاه کنید.
+از طریق [Issues](https://github.com/VEXEL98/BidiChat/issues) یا [Discussions](https://github.com/VEXEL98/BidiChat/discussions) در میان بگذارید. 
+
+اگر این پروژه به کارتان آمده، با ستاره⭐ دادن به آن دیگران را هم آگاه کنید.
 
 ---
 
